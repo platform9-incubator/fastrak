@@ -7,11 +7,14 @@ import os
 import time
 
 vol_base_dir = os.getenv('VOLUMES_BASE_DIR', '/tmp/local_volumes')
-fetch_nics_script = os.getenv('FETCH_PHYSICAL_NICS_SCRIPT', '/opt/pf9/hostagent/extensions/fetch_physical_nics')
-out = subprocess.check_output(['sudo', fetch_nics_script])
-parsed = json.loads(out)
-default_nic = parsed['default']
-host_ip = parsed[default_nic]
+host_ip = os.getenv('HOST_IP')
+if not host_ip:
+	fetch_nics_script = os.getenv('FETCH_PHYSICAL_NICS_SCRIPT', '/opt/pf9/hostagent/extensions/fetch_physical_nics')
+	out = subprocess.check_output(['sudo', fetch_nics_script])
+	parsed = json.loads(out)
+	default_nic = parsed['default']
+	host_ip = parsed[default_nic]
+namespace = os.getenv('NAMESPACE', 'default')
 print('host ip: %s' % host_ip)
 
 
@@ -56,7 +59,7 @@ def pv_json_string(name, local_path, storage_request, host_name):
 
 
 def create_new_volumes():
-    out = subprocess.check_output(['kubectl', 'get', '-ojson', 'pvc'])
+    out = subprocess.check_output(['kubectl', 'get', '-n', namespace, '-ojson', 'pvc'])
     parsed = json.loads(out)
     for pvc in parsed['items']:
         name = pvc['metadata']['name']
